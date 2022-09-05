@@ -14,24 +14,33 @@ module.exports = {
         slug: { type: DataTypes.STRING, unique: true, validate: { is: /^[a-z0-9-_]+$/i } },
         avatar: { type: DataTypes.STRING }
     },
-    hooks: {
-        beforeSave: (team, options) => {
-            if (!team.avatar) {
-                team.avatar = generateTeamAvatar(team.name)
+    hooks: function (M) {
+        return {
+            beforeSave: (team, options) => {
+                if (!team.avatar) {
+                    team.avatar = generateTeamAvatar(team.name)
+                }
+                if (!team.slug) {
+                    team.slug = slugify(team.name)
+                }
+                team.slug = team.slug.toLowerCase()
+            },
+            beforeDestroy: async (team, opts) => {
+                const projectCount = await team.projectCount()
+                if (projectCount > 0) {
+                    throw new Error('Cannot delete team that owns projects')
+                }
+            },
+            afterDestroy: async (team, opts) => {
+                // TODO: what needs tidying up after a team is deleted?
+                // Doing this here also clears historical invites.
+                // TeamId is null because there is a cascade rule
+                await M.Invitation.destroy({
+                    where: {
+                        teamId: null
+                    }
+                })
             }
-            if (!team.slug) {
-                team.slug = slugify(team.name)
-            }
-            team.slug = team.slug.toLowerCase()
-        },
-        beforeDestroy: async (team, opts) => {
-            const projectCount = await team.projectCount()
-            if (projectCount > 0) {
-                throw new Error('Cannot delete team that owns projects')
-            }
-        },
-        afterDestroy: async (team, opts) => {
-            // TODO: what needs tidying up after a team is deleted?
         }
     },
     associations: function (M) {
