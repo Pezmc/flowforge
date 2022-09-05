@@ -14,6 +14,8 @@ describe('Team API', function () {
         TestObjects.bob = await app.db.models.User.create({ username: 'bob', name: 'Bob Solo', email: 'bob@example.com', email_verified: true, password: 'bbPassword' })
         TestObjects.chris = await app.db.models.User.create({ username: 'chris', name: 'Chris Kenobi', email: 'chris@example.com', email_verified: true, password: 'ccPassword' })
 
+        TestObjects.ATeam = await app.db.models.Team.byName('ATeam')
+
         TestObjects.tokens = {}
         await login('alice', 'aaPassword')
         await login('bob', 'bbPassword')
@@ -66,11 +68,11 @@ describe('Team API', function () {
         // - should fail if team owns projects
 
         it('', async function () {
-            // Alice invites Chris to TeamB
+            // Alice invites Chris to TeamA
             // Delete TeamB
             await app.inject({
                 method: 'POST',
-                url: `/api/v1/teams/${TestObjects.BTeam.hashid}/invitations`,
+                url: `/api/v1/teams/${TestObjects.ATeam.hashid}/invitations`,
                 cookies: { sid: TestObjects.tokens.alice },
                 payload: {
                     user: 'chris'
@@ -78,13 +80,13 @@ describe('Team API', function () {
             })
             const inviteListA = (await app.inject({
                 method: 'GET',
-                url: `/api/v1/teams/${TestObjects.BTeam.hashid}/invitations`,
+                url: `/api/v1/teams/${TestObjects.ATeam.hashid}/invitations`,
                 cookies: { sid: TestObjects.tokens.alice }
             })).json()
             inviteListA.should.have.property('count', 1)
             const deleteResult = await app.inject({
                 method: 'DELETE',
-                url: `/api/v1/teams/${TestObjects.BTeam.hashid}`,
+                url: `/api/v1/teams/${TestObjects.ATeam.hashid}`,
                 cookies: { sid: TestObjects.tokens.alice }
             })
             deleteResult.statusCode.should.equal(200)
